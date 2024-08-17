@@ -24,7 +24,7 @@ const NavBar = () => {
           /> */}
           About Us
         </NavLink>
-        <NavLink to="/Notifications" className={'cursor-pointer hover:bg-primary hover:px-3 hover:rounded-md hover:py-2 hover:text-white duration-300'}>
+        <NavLink to="/Notifications" onClick={()=> console.log('HEYYYYYYY ')} className={'cursor-pointer hover:bg-primary hover:px-3 hover:rounded-md hover:py-2 hover:text-white duration-300'}>
         Profile 
           {/* <img
             className="w-7 h-7 mr-6 ml-2 cursor-pointer hover:scale-110 duration-300"
