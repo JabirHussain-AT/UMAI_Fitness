@@ -2,8 +2,12 @@ import React from "react";
 import { motion } from "framer-motion";
 import Banner from "../../assets/MainBanner.png";
 import { MdArrowRight } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 const BannerContent = () => {
+
+  const navigate = useNavigate()
+
   const text =
     "Ready to transform your body and mind? We're more than just a gym, we're your community to conquer your fitness goals. Join us and experience personalized training, motivating classes, and the support you need to achieve greatness. Start your journey today!";
 
@@ -27,9 +31,10 @@ const BannerContent = () => {
         {/*  Buttons  */}
         <motion.div className={"flex gap-3"}>
           <motion.button
-            className="bg-secondery hover:cursor-pointer flex gap-3 items-center text-black px-6 py-3 rounded-full font-bold text-lg hover:bg-opacity-80 transition duration-300"
+            className=" text-sm  px-3 py-3 bg-secondery hover:cursor-pointer flex gap-3 items-center text-black MD:px-5 md:pl-7 md:py-3 rounded-full font-bold md:text-lg hover:bg-opacity-80 transition duration-300"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={ ( ) => navigate('/workouts') }
           >
             Show Workouts
             <span>
@@ -37,7 +42,7 @@ const BannerContent = () => {
             </span>
           </motion.button>
           <motion.button
-            className="text-white hover:cursor-pointer hover:bg-white hover:duration-100 hover:text-black flex gap-3 items-center px-6 py-3 rounded-full font-serif border-2 border-white text-lg hover:bg-opacity-80 transition duration-700"
+            className="text-white text-sm  px-3 py-3  hover:cursor-pointer hover:bg-white hover:duration-100 hover:text-black flex gap-3 items-center md:px-6 md:py-3 rounded-full font-serif border-2 border-white md:text-lg hover:bg-opacity-80 transition duration-700"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

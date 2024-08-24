@@ -1,6 +1,7 @@
 import React from "react";
 import NavBar from "./NavBar";
 import { Outlet } from "react-router-dom";
+import Footer from './Footer'
 
 const NavLayout = () => {
   return (
@@ -10,6 +11,7 @@ const NavLayout = () => {
         <div className="flex-grow overflow-y-auto">
           <Outlet />
         </div>
+        < Footer />
       </div>
     </>
   );
