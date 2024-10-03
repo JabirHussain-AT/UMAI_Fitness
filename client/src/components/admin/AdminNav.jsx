@@ -6,6 +6,7 @@ const AdminNav = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
+    { name: 'Dashboard', icon: <FaUsers />, path: '/admin/home'  },
     { name: 'Members', icon: <FaUsers />, path: '/admin/members' },
     { name: 'Payments', icon: <FaMoneyBillWave />, path: '/admin/payments' },
     { name: 'Workouts', icon: <FaDumbbell />, path: '/admin/workouts' },
@@ -13,7 +14,7 @@ const AdminNav = () => {
   ];
 
   return (
-    <nav className={`bg-primarySupp text-white h-screen fixed left-0 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'}`}>
+    <nav className={`z-50 bg-primarySupp text-white h-screen fixed left-0 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'}`}>
       <div className="p-4">
         <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-center">
           <FaBars size={24} />
