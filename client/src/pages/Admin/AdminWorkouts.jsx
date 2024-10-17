@@ -23,6 +23,8 @@ const AdminWorkouts = () => {
     }),
   });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false); // State to track loading
+  const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
 
   useEffect(() => {
     fetchWorkouts();
@@ -31,7 +33,7 @@ const AdminWorkouts = () => {
   const fetchWorkouts = async () => {
     try {
       const response = await axios.get("/api/workouts");
-    //   setWorkouts(response.data);
+      setWorkouts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching workouts:", error);
     }
@@ -48,21 +50,13 @@ const AdminWorkouts = () => {
     }
   };
 
-  const handleImageUpload = async (file, index) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "YOUR_CLOUDINARY_UPLOAD_PRESET"); // replace with your upload preset
-
-    try {
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload`, // replace with your Cloudinary cloud name
-        formData
-      );
-      const imageUrl = response.data.secure_url;
-      handleInputChange({ target: { name: "image", value: imageUrl } }, index);
-    } catch (error) {
-      console.error("Error uploading image:", error);
-    }
+  const handleImageFiles = (files, index) => {
+    const newExercises = [...formData.exercises];
+    newExercises[index] = {
+      ...newExercises[index],
+      image: Array.from(files), // Store files as array
+    };
+    setFormData({ ...formData, exercises: newExercises });
   };
 
   const validateForm = () => {
@@ -93,16 +87,60 @@ const AdminWorkouts = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    setLoading(true); // Start loading state
+
+    // Create a copy of formData to modify before submission
+    const formDataCopy = { ...formData };
+
     try {
-      if (isEditingWorkout && currentWorkout?._id) {
-        await axios.put(`/api/workouts/${currentWorkout._id}`, formData);
-      } else {
-        await axios.post("/api/workouts", formData);
+      // Loop through each exercise and upload its image files to Cloudinary
+      for (let i = 0; i < formDataCopy.exercises.length; i++) {
+        const exercise = formDataCopy.exercises[i];
+
+        // Array to hold image URLs for this exercise
+        const imageUrls = [];
+
+        // Assuming `exercise.image` holds the image files as an array
+        for (let imageFile of exercise.image) {
+          const formData = new FormData();
+          formData.append("file", imageFile);
+          formData.append("upload_preset", "wx0iwu8u"); // Your Cloudinary preset
+
+          const cloudinaryResponse = await axios.post(
+            "https://api.cloudinary.com/v1_1/dato7wx0r/upload", // Your Cloudinary URL
+            formData,
+            {
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(percentCompleted); // Update progress state
+              },
+            }
+          );
+
+          imageUrls.push(cloudinaryResponse.data.secure_url); // Push the uploaded image URL to the array
+        }
+
+        // Store the array of image URLs under the current exercise
+        formDataCopy.exercises[i].image = imageUrls;
       }
-      fetchWorkouts();
-      resetForm();
+      // console.log("🚀 ~ file: AdminWorkouts.jsx:135 ~ handleSubmit ~ formDataCopy:", formDataCopy)
+
+      await axios.post("/api/workouts", formDataCopy);
+      // Submit the form with all the exercise image URLs updated
+      if (isEditingWorkout && currentWorkout?._id) {
+        await axios.put(`/api/workouts/${currentWorkout._id}`, formDataCopy);
+      } else {
+      }
+
+      fetchWorkouts(); // Refresh the workouts list after submission
+      resetForm(); // Reset the form after successful submission
     } catch (error) {
       console.error("Error saving workout:", error);
+    } finally {
+      setLoading(false); // End loading state
+      setUploadProgress(0); // Reset progress
     }
   };
 
@@ -147,7 +185,6 @@ const AdminWorkouts = () => {
     <div className="bg-primary text-white p-6 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Workout Management</h1>
 
-      {/* Add Workout Button */}
       {!isAddingWorkout && (
         <button
           onClick={() => setIsAddingWorkout(true)}
@@ -157,7 +194,6 @@ const AdminWorkouts = () => {
         </button>
       )}
 
-      {/* Workout Form */}
       {isAddingWorkout && (
         <form
           onSubmit={handleSubmit}
@@ -166,6 +202,13 @@ const AdminWorkouts = () => {
           <h2 className="text-2xl font-bold mb-4">
             {isEditingWorkout ? "Edit Workout" : "Add New Workout"}
           </h2>
+
+          {/* Show loading progress if uploading */}
+          {loading && (
+            <div className="mb-4 text-center">
+              <p className="text-lg">Uploading: {uploadProgress}%</p>
+            </div>
+          )}
 
           {/* Category and Body Part Selection */}
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -209,11 +252,11 @@ const AdminWorkouts = () => {
             </div>
           </div>
 
-          {/* Exercise Inputs */}
+          {/* Exercises Input */}
           {formData.exercises.map((exercise, index) => (
-            <div key={index} className="mb-6 p-4 bg-primary rounded-lg">
-              <h3 className="text-xl font-bold mb-2">Exercise {index + 1}</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div key={index} className="bg-primaryDark p-4 mb-4 rounded-lg">
+              <h3 className="text-lg font-bold mb-4">Exercise {index + 1}</h3>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block mb-2">Name</label>
                   <input
@@ -221,7 +264,7 @@ const AdminWorkouts = () => {
                     name="name"
                     value={exercise.name}
                     onChange={(e) => handleInputChange(e, index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Name`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -229,13 +272,15 @@ const AdminWorkouts = () => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block mb-2">Image</label>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleImageUpload(e.target.files[0], index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    multiple
+                    onChange={(e) => handleImageFiles(e.target.files, index)}
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Image`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -243,14 +288,14 @@ const AdminWorkouts = () => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block mb-2">Instructions</label>
-                  <input
-                    type="text"
+                  <textarea
                     name="instructions"
                     value={exercise.instructions}
                     onChange={(e) => handleInputChange(e, index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Instructions`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -258,6 +303,8 @@ const AdminWorkouts = () => {
                     </p>
                   )}
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 mt-4">
                 <div>
                   <label className="block mb-2">Reps</label>
                   <input
@@ -265,7 +312,7 @@ const AdminWorkouts = () => {
                     name="reps"
                     value={exercise.reps}
                     onChange={(e) => handleInputChange(e, index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Reps`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -273,6 +320,7 @@ const AdminWorkouts = () => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block mb-2">Sets</label>
                   <input
@@ -280,7 +328,7 @@ const AdminWorkouts = () => {
                     name="sets"
                     value={exercise.sets}
                     onChange={(e) => handleInputChange(e, index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Sets`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -288,14 +336,15 @@ const AdminWorkouts = () => {
                     </p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block mb-2">Time (in seconds)</label>
+                  <label className="block mb-2">Time</label>
                   <input
-                    type="number"
+                    type="text"
                     name="time"
                     value={exercise.time}
                     onChange={(e) => handleInputChange(e, index)}
-                    className="w-full p-2 bg-primarySupp rounded"
+                    className="w-full p-2 bg-primary rounded"
                   />
                   {errors[`exercise${index}Time`] && (
                     <p className="text-red-500 text-sm mt-1">
@@ -307,51 +356,33 @@ const AdminWorkouts = () => {
             </div>
           ))}
 
-          {/* Submit and Cancel Buttons */}
-          <div className="flex justify-between">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300"
-            >
-              {isEditingWorkout ? "Update Workout" : "Add Workout"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="bg-secondery text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mt-6"
+            disabled={loading} // Disable button while loading
+          >
+            {loading ? "Uploading..." : isEditingWorkout ? "Update Workout" : "Add Workout"}
+          </button>
         </form>
       )}
 
-      {/* Workout List */}
-      <h2 className="text-2xl font-bold mb-4">Workout List</h2>
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-3 gap-6">
         {workouts.map((workout) => (
-          <div
-            key={workout._id}
-            className="bg-primarySupp p-4 rounded-lg flex justify-between items-center"
-          >
-            <div>
-              <h3 className="text-xl font-bold">{workout.category}</h3>
-              <p>Body Part: {workout.bodyPart}</p>
-            </div>
-            <div>
-              <button
-                onClick={() => handleEdit(workout)}
-                className="text-yellow-500 mr-4"
-              >
-                <FaEdit />
-              </button>
-              <button
-                onClick={() => handleDelete(workout._id)}
-                className="text-red-500"
-              >
-                <FaTrash />
-              </button>
-            </div>
+          <div key={workout._id} className="bg-primarySupp p-6 rounded-lg">
+            <h3 className="text-xl font-bold mb-4">{workout.category}</h3>
+            <p className="text-sm mb-2">Body Part: {workout.bodyPart}</p>
+            <button
+              onClick={() => handleEdit(workout)}
+              className="bg-secondery text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mr-2"
+            >
+              <FaEdit className="mr-2" /> Edit
+            </button>
+            <button
+              onClick={() => handleDelete(workout._id)}
+              className="bg-red-500 text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300"
+            >
+              <FaTrash className="mr-2" /> Delete
+            </button>
           </div>
         ))}
       </div>
