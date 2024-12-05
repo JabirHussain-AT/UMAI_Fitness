@@ -10,6 +10,7 @@ const AdminNav = () => {
     { name: 'Members', icon: <FaUsers />, path: '/admin/members' },
     { name: 'Payments', icon: <FaMoneyBillWave />, path: '/admin/payments' },
     { name: 'Workouts', icon: <FaDumbbell />, path: '/admin/workouts' },
+    { name: 'Add-Workouts', icon: <FaDumbbell />, path: '/admin/add-workouts' },
     { name: 'Logout', icon: <FaSignOutAlt />, path: '/logout' },
   ];
 

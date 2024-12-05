@@ -7,6 +7,8 @@ const bodyParts = ["chest", "back", "legs", "arms", "shoulders", "core"];
 
 const AdminWorkouts = () => {
   const [workouts, setWorkouts] = useState([]);
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
+
   const [isAddingWorkout, setIsAddingWorkout] = useState(false);
   const [isEditingWorkout, setIsEditingWorkout] = useState(false);
   const [currentWorkout, setCurrentWorkout] = useState(null);
@@ -32,7 +34,9 @@ const AdminWorkouts = () => {
 
   const fetchWorkouts = async () => {
     try {
-      const response = await axios.get("/api/workouts");
+      const response = await axios.get(
+        "http://localhost:3000/private/api/workouts"
+      );
       setWorkouts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -83,6 +87,11 @@ const AdminWorkouts = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  //toggle button
+  const toggleExpand = (id) => {
+    setExpandedWorkoutId(expandedWorkoutId === id ? null : id);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -127,10 +136,16 @@ const AdminWorkouts = () => {
       }
       // console.log("🚀 ~ file: AdminWorkouts.jsx:135 ~ handleSubmit ~ formDataCopy:", formDataCopy)
 
-      await axios.post("/api/workouts", formDataCopy);
+      await axios.post(
+        "http://localhost:3000/private/api/workouts",
+        formDataCopy
+      );
       // Submit the form with all the exercise image URLs updated
       if (isEditingWorkout && currentWorkout?._id) {
-        await axios.put(`/api/workouts/${currentWorkout._id}`, formDataCopy);
+        await axios.put(
+          `private/api/workouts/${currentWorkout._id}`,
+          formDataCopy
+        );
       } else {
       }
 
@@ -361,7 +376,11 @@ const AdminWorkouts = () => {
             className="bg-secondery text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mt-6"
             disabled={loading} // Disable button while loading
           >
-            {loading ? "Uploading..." : isEditingWorkout ? "Update Workout" : "Add Workout"}
+            {loading
+              ? "Uploading..."
+              : isEditingWorkout
+              ? "Update Workout"
+              : "Add Workout"}
           </button>
         </form>
       )}
@@ -371,18 +390,62 @@ const AdminWorkouts = () => {
           <div key={workout._id} className="bg-primarySupp p-6 rounded-lg">
             <h3 className="text-xl font-bold mb-4">{workout.category}</h3>
             <p className="text-sm mb-2">Body Part: {workout.bodyPart}</p>
-            <button
-              onClick={() => handleEdit(workout)}
-              className="bg-secondery text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mr-2"
-            >
-              <FaEdit className="mr-2" /> Edit
-            </button>
-            <button
-              onClick={() => handleDelete(workout._id)}
-              className="bg-red-500 text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300"
-            >
-              <FaTrash className="mr-2" /> Delete
-            </button>
+            <div className="flex-col gap-2">
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to delete this workout?"
+                    )
+                  ) {
+                    handleDelete(workout._id);
+                  }
+                }}
+                className="bg-red-500 mb-2 flex text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300"
+              >
+                <FaTrash className="mr-2" /> Delete
+              </button>
+
+              <button
+                onClick={() => handleEdit(workout)}
+                className="bg-secondery mb-1 flex justify-items-center text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mr-2"
+              >
+                <FaEdit className="mr-2 mt-1" /> Edit
+              </button>
+              <button
+                onClick={() => toggleExpand(workout._id)}
+                className="bg-blue-500 text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-300 mt-2"
+              >
+                {expandedWorkoutId === workout._id ? "Collapse" : "Expand"}
+              </button>
+            </div>
+            {expandedWorkoutId === workout._id && (
+              <div className="mt-4">
+                <h4 className="text-lg font-bold mb-2">Exercises:</h4>
+                <ul className="space-y-2">
+                  {workout.exercises.map((exercise, index) => (
+                    <li
+                      key={index}
+                      className="bg-gray-100 text-black p-3 rounded-lg"
+                    >
+                      <img src={exercise?.image} alt="not available" />
+                      <p>
+                        <strong>Name:</strong> {exercise.name}
+                      </p>
+                      <p>
+                        <strong>Instructions:</strong> {exercise.instructions}
+                      </p>
+                      <p>
+                        <strong>Reps:</strong> {exercise.reps}
+                      </p>
+                      <p>
+                        <strong>Sets:</strong> {exercise.sets}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ))}
       </div>

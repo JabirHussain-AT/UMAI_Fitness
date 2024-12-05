@@ -16,6 +16,7 @@ import PrivateRoute from "./PrivateRoute";
 import PaymentDetails from "../pages/PaymentDetials";
 import AdminPayments from "../pages/Admin/AdminPayments";
 import AdminWorkouts from "../pages/Admin/AdminWorkouts";
+import AdminAddedWorkouts from "../pages/Admin/AdminAddedWorkouts";
 
 const AppRouter = () => {
   return (
@@ -70,7 +71,8 @@ const AppRouter = () => {
             <Route path="home" element={<AdminHome />} />
             <Route path="members" element={<AdminMembers />} />
             <Route path="payments" element={<AdminPayments />} />
-            <Route path="workouts" element={<AdminWorkouts />} />
+            <Route path="add-workouts" element={<AdminWorkouts />} />
+            <Route path="workouts" element={<AdminAddedWorkouts />} />
           </Route>
         </Routes>
       </Router>
